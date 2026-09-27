@@ -1,19 +1,21 @@
 import { AppDataSource } from './data-source';
-
-// import { seedRestaurant } from './seeds/restaurant.seed';
-// import { seedCategories } from './seeds/category.seed';
+import { seedRestaurant } from './seeds/restaurant.seed';
+import { seedCategories } from './seeds/category.seed';
 import { seedMenu } from './seeds/menu.seed';
-// import { seedBranches } from './seeds/branch.seed';
+import { seedBranches } from './seeds/branch.seed';
 
 async function bootstrap() {
   await AppDataSource.initialize();
 
+  console.log('🔄 Ensuring database tables exist (synchronizing schema)...');
+  await AppDataSource.synchronize();
+
   console.log('🌱 Seeding database...');
 
-//   await seedRestaurant(AppDataSource);
-//   await seedCategories(AppDataSource);
+  await seedRestaurant(AppDataSource);
+  await seedCategories(AppDataSource);
   await seedMenu(AppDataSource);
-//   await seedBranches(AppDataSource);
+  await seedBranches(AppDataSource);
 
   console.log('✅ Database seeded successfully');
 
@@ -21,6 +23,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error(err);
+  console.error('❌ Seeding failed:', err);
   process.exit(1);
 });

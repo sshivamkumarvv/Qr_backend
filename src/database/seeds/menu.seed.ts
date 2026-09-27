@@ -1,6 +1,5 @@
-
-import { MenuItem } from 'src/modules/menu-items/entities/menu-item.entity';
 import { DataSource } from 'typeorm';
+import { MenuItem } from '../../modules/menu-items/entities/menu-item.entity';
 
 const RESTAURANT_ID = '68e85e16-9389-4628-a0ef-fdddff815016';
 
