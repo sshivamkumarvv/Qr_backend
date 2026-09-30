@@ -184,6 +184,9 @@ export class TablesService {
     let isWithinRange: boolean | null = null;
     let distanceMeters: number | null = null;
 
+    const locationCheckEnabled =
+      process.env.ENABLE_DINE_IN_LOCATION_CHECK === 'true';
+
     if (dto.latitude != null && dto.longitude != null) {
       distanceMeters = Math.round(
         haversineDistanceKm(
@@ -193,7 +196,12 @@ export class TablesService {
           table.branch.longitude,
         ) * 1000,
       );
-      isWithinRange = distanceMeters <= DINE_IN_MAX_DISTANCE_METERS;
+      isWithinRange = locationCheckEnabled
+        ? distanceMeters <= DINE_IN_MAX_DISTANCE_METERS
+        : true;
+    } else if (!locationCheckEnabled) {
+      // In testing mode, auto-verify range even if coordinates are absent
+      isWithinRange = true;
     }
 
     return {
@@ -267,6 +275,11 @@ export class TablesService {
     latitude?: number,
     longitude?: number,
   ): void {
+    // If location check is disabled in env, skip validation for easy testing
+    if (process.env.ENABLE_DINE_IN_LOCATION_CHECK !== 'true') {
+      return;
+    }
+
     if (latitude == null || longitude == null) {
       throw new BadRequestException(
         'Your current location is required to place a dine-in order.',
