@@ -217,11 +217,14 @@ export class PaymentsService {
       process.env.UPI_MERCHANT_VPA ||
       'foodordering@okhdfcbank';
     const merchantName =
-      order.restaurantName ||
       this.configService.get<string>('upi.merchantName') ||
+      process.env.UPI_MERCHANT_NAME ||
+      order.restaurantName ||
       'Food Ordering Platform';
     const merchantCode =
-      this.configService.get<string>('upi.merchantCode') || '5812';
+      this.configService.get<string>('upi.merchantCode') ||
+      process.env.UPI_MERCHANT_CODE ||
+      '5812';
     const amount = Number(order.totalAmount).toFixed(2);
     const transactionRef = order.id.replace(/-/g, '').slice(0, 32);
     const transactionNote = `Payment for #${order.id.slice(0, 8).toUpperCase()}`;

@@ -57,4 +57,10 @@ razorpay: {
     process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
   ),
 },
+
+upi: {
+  merchantVpa: process.env.UPI_MERCHANT_VPA || 'foodordering@okhdfcbank',
+  merchantName: process.env.UPI_MERCHANT_NAME || 'Food Ordering Platform',
+  merchantCode: process.env.UPI_MERCHANT_CODE || '5812',
+},
 });
