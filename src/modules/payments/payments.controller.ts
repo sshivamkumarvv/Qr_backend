@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
   Param,
   Post,
@@ -13,6 +14,7 @@ import type { Request } from 'express';
 
 import { PaymentsService } from './payments.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import { VerifyUpiPaymentDto } from './dto/verify-upi-payment.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -41,6 +43,54 @@ export class PaymentsController {
       orderId,
       customerId,
     );
+  }
+
+  /**
+   * Customer
+   * Create UPI intent URI & app-specific links for an order.
+   */
+  @Post('orders/:orderId/upi-intent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  createUpiIntent(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+  ) {
+    return this.paymentsService.createUpiIntent(orderId, customerId);
+  }
+
+  /**
+   * Customer
+   * Verify UPI intent payment after returning from UPI app.
+   */
+  @Post('orders/:orderId/verify-upi')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  verifyUpi(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+    @Body() dto: VerifyUpiPaymentDto,
+  ) {
+    return this.paymentsService.verifyUpiPayment(customerId, {
+      orderId,
+      transactionRef: dto.transactionRef,
+      utr: dto.utr,
+      upiApp: dto.upiApp,
+    });
+  }
+
+  /**
+   * Customer
+   * Get payment verification status of an order.
+   */
+  @Get('orders/:orderId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  getPaymentStatus(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+  ) {
+    return this.paymentsService.getPaymentStatus(orderId, customerId);
   }
 
   /**
