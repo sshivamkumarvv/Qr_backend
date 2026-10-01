@@ -223,8 +223,7 @@ export class PaymentsService {
       'Food Ordering Platform';
     const merchantCode =
       this.configService.get<string>('upi.merchantCode') ||
-      process.env.UPI_MERCHANT_CODE ||
-      '5812';
+      process.env.UPI_MERCHANT_CODE;
     const amount = Number(order.totalAmount).toFixed(2);
     const transactionRef = order.id.replace(/-/g, '').slice(0, 32);
     const transactionNote = `Payment for #${order.id.slice(0, 8).toUpperCase()}`;
@@ -232,12 +231,16 @@ export class PaymentsService {
     const params = new URLSearchParams({
       pa: merchantVpa,
       pn: merchantName,
-      mc: merchantCode,
       tr: transactionRef,
       tn: transactionNote,
       am: amount,
       cu: 'INR',
     });
+
+    // Only attach mc if a valid merchant code is supplied (personal UPI accounts don't need mc)
+    if (merchantCode && merchantCode !== '0000' && merchantCode.trim() !== '') {
+      params.set('mc', merchantCode.trim());
+    }
 
     const upiUri = `upi://pay?${params.toString()}`;
 
