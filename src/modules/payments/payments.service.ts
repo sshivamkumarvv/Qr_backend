@@ -92,6 +92,7 @@ export class PaymentsService {
    */
   async getPricingConfig(restaurantId?: string): Promise<{
     platformFeePercent: number;
+    gstPercent: number;
     defaultGateway: string;
     supportedGateways: string[];
     currency: string;
@@ -111,6 +112,7 @@ export class PaymentsService {
 
     return {
       platformFeePercent: feePercent,
+      gstPercent: 18,
       defaultGateway: this.gatewayFactory.getDefaultGateway(),
       supportedGateways: this.gatewayFactory.getSupportedGateways(),
       currency: 'INR',

@@ -59,7 +59,12 @@ export class PhonePeGatewayAdapter implements IPaymentGateway {
     const platformShare =
       order.platformShare != null
         ? Number(order.platformShare)
-        : Number(order.convenienceFee ?? ((order.subtotal * platformFeePercent) / 100).toFixed(2));
+        : Number(
+            (
+              Number(order.convenienceFee ?? ((order.subtotal * platformFeePercent) / 100)) +
+              Number(order.taxAmount ?? 0)
+            ).toFixed(2),
+          );
     const restaurantShare =
       order.restaurantShare != null
         ? Number(order.restaurantShare)

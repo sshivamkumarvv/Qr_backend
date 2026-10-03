@@ -279,10 +279,14 @@ export class OrdersService {
         let taxAmount = 0;
 
         if (orderType === OrderType.DINE_IN) {
-          // Table QR Ordering: 5% (or configured %) platform service fee on subtotal.
-          // Food menu item prices are tax-inclusive so 1000 + 5% = 1050 exactly!
-          convenienceFee = Number(((subtotal * platformFeePercent) / 100).toFixed(2));
-          taxAmount = 0;
+          // Table QR Ordering SaaS model:
+          // Menu item prices are food GST inclusive.
+          // Platform Convenience Fee = platformFeePercent% of subtotal (e.g. 5% of 1000 = ₹50).
+          // GST on Platform Convenience Fee = 18% of the platform fee (e.g. 18% of 50 = ₹9).
+          const basePlatformFee = Number(((subtotal * platformFeePercent) / 100).toFixed(2));
+          const gstOnPlatformFee = Number(((basePlatformFee * 18) / 100).toFixed(2));
+          convenienceFee = basePlatformFee;
+          taxAmount = gstOnPlatformFee;
         } else {
           taxAmount = this.calculateTax(
             restaurant,
@@ -307,9 +311,10 @@ export class OrdersService {
         );
 
         // Revenue Split calculation:
-        // Platform share = platform convenience fee (5% of subtotal)
-        // Restaurant share = remaining total (subtotal - discount + delivery if applicable)
-        const platformShare = convenienceFee;
+        // Platform share = platform convenience fee (5%) + GST on platform fee (18%)
+        // (Platform retains the 5% SaaS commission + remits the 18% GST collected)
+        // Restaurant share = food subtotal - discount + any delivery fee
+        const platformShare = Number((convenienceFee + taxAmount).toFixed(2));
         const restaurantShare = Number((totalAmount - platformShare).toFixed(2));
 
         const newOrder = new Order();
@@ -346,10 +351,14 @@ export class OrdersService {
         newOrder.settlementStatus = 'PENDING';
         newOrder.splitDetails = JSON.stringify({
           platformFeePercent,
+          basePlatformFee: convenienceFee,
+          gstPercent: 18,
+          gstOnPlatformFee: taxAmount,
           platformShare,
           restaurantShare,
           subtotal,
           convenienceFee,
+          taxAmount,
           totalAmount,
           currency: 'INR',
           calculatedAt: new Date().toISOString(),
