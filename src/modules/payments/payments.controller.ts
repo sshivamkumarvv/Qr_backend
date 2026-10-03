@@ -6,6 +6,7 @@ import {
   Headers,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,6 +16,9 @@ import type { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import { VerifyUpiPaymentDto } from './dto/verify-upi-payment.dto';
+import { PhonePeCreateDto } from './dto/phonepe-create.dto';
+import { RefundPaymentDto } from './dto/refund-payment.dto';
+import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -27,6 +31,56 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
   ) {}
+
+  /**
+   * Public / Client
+   * Fetch current pricing & commission config (platform fee %, default gateway).
+   */
+  @Get('pricing-config')
+  getPricingConfig(@Query('restaurantId') restaurantId?: string) {
+    return this.paymentsService.getPricingConfig(restaurantId);
+  }
+
+  /**
+   * Customer
+   * Unified payment initiation supporting PhonePe, Razorpay, etc.
+   */
+  @Post('orders/:orderId/initiate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  initiatePayment(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+    @Body() dto?: InitiatePaymentDto,
+  ) {
+    return this.paymentsService.initiatePayment(orderId, customerId, dto);
+  }
+
+  /**
+   * Customer
+   * Unified payment verification with split execution.
+   */
+  @Post('orders/:orderId/verify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  verifyUnified(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+    @Body() payload?: any,
+  ) {
+    return this.paymentsService.verifyOrderPayment(orderId, customerId, payload);
+  }
+
+  /**
+   * Restaurant Owner / Admin
+   * Trigger or check revenue split settlement for an order.
+   */
+  @Post('orders/:orderId/settle')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.RESTAURANT_OWNER, Role.ADMIN)
+  settleSplit(@Param('orderId') orderId: string) {
+    return this.paymentsService.processSplitSettlement(orderId);
+  }
 
   /**
    * Customer
@@ -42,6 +96,44 @@ export class PaymentsController {
     return this.paymentsService.createPaymentOrder(
       orderId,
       customerId,
+    );
+  }
+
+  /**
+   * Customer
+   * Initiate PhonePe Payment Gateway checkout (Zero/Low MDR on UPI with automated verification).
+   */
+  @Post('orders/:orderId/phonepe-create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  createPhonePePayment(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+    @Body() dto?: PhonePeCreateDto,
+  ) {
+    return this.paymentsService.createPhonePePayment(
+      orderId,
+      customerId,
+      dto,
+    );
+  }
+
+  /**
+   * Customer / Client
+   * Actively verify PhonePe status against PhonePe Check Status API.
+   */
+  @Post('orders/:orderId/phonepe-verify')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  verifyPhonePe(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+    @Body('merchantTransactionId') merchantTransactionId?: string,
+  ) {
+    return this.paymentsService.verifyPhonePePayment(
+      orderId,
+      customerId,
+      merchantTransactionId,
     );
   }
 
@@ -114,6 +206,50 @@ export class PaymentsController {
   }
 
   /**
+   * Customer / Restaurant Owner / Admin
+   * Refund a paid order (PhonePe PG / Razorpay) with risk/reason tracking.
+   */
+  @Post('orders/:orderId/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER, Role.RESTAURANT_OWNER, Role.ADMIN)
+  refundOrder(
+    @Param('orderId') orderId: string,
+    @Body() dto?: RefundPaymentDto,
+  ) {
+    return this.paymentsService.refundPayment(
+      orderId,
+      dto?.amount,
+      dto?.reason,
+    );
+  }
+
+  /**
+   * Customer
+   * Check refund status for an order.
+   */
+  @Get('orders/:orderId/refund-status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.CUSTOMER)
+  getRefundStatus(
+    @Param('orderId') orderId: string,
+    @GetUser('id') customerId: string,
+  ) {
+    return this.paymentsService.getRefundStatus(orderId, customerId);
+  }
+
+  /**
+   * Public (checksum-verified)
+   * PhonePe Server-to-Server Webhook callback.
+   */
+  @Post('phonepe/webhook')
+  phonePeWebhook(
+    @Body() body: { response: string },
+    @Headers() headers: Record<string, string>,
+  ) {
+    return this.paymentsService.handlePhonePeWebhook(body, headers);
+  }
+
+  /**
    * Public (signature-verified)
    * Razorpay webhook — payment.captured / payment.failed etc.
    * Needs the raw request body to verify the HMAC signature, so
@@ -134,3 +270,4 @@ export class PaymentsController {
     );
   }
 }
+

@@ -179,6 +179,63 @@ export class Order {
   })
   razorpayOrderId!: string | null;
 
+  // PhonePe transaction tracking
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  phonepeTransactionId!: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  phonepeMerchantTransactionId!: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  paymentProvider!: string | null;
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  paymentDetails!: string | null;
+
+  // Refund tracking
+  @Column({
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
+  refundId!: string | null;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  refundAmount!: number | null;
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
+  refundStatus!: string | null;
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  refundReason!: string | null;
+
   // Pricing
   @Column({
     type: 'decimal',
@@ -225,6 +282,44 @@ export class Order {
     scale: 2,
   })
   totalAmount!: number;
+
+  // Split and Platform Commission Management
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 5,
+  })
+  platformFeePercent!: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  platformShare!: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  restaurantShare!: number;
+
+  @Column({
+    type: 'varchar',
+    length: 50,
+    default: 'PENDING',
+  })
+  settlementStatus!: string; // 'PENDING' | 'SETTLED' | 'SPLIT_PROCESSED' | 'REFUNDED'
+
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  splitDetails!: string | null;
 
   // Delivery Address Snapshot — null for dine-in orders (see orderType
   // above). Always populated for delivery orders, same as before.

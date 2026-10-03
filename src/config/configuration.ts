@@ -44,7 +44,12 @@ pricing: {
   taxPercent: parseFloat(
     process.env.DEFAULT_TAX_PERCENT ?? '5',
   ),
+  platformFeePercent: parseFloat(
+    process.env.DEFAULT_PLATFORM_FEE_PERCENT ?? '5',
+  ),
 },
+
+defaultPaymentGateway: process.env.DEFAULT_PAYMENT_GATEWAY || 'phonepe',
 
 razorpay: {
   keyId: process.env.RAZORPAY_KEY_ID ?? '',
@@ -57,6 +62,15 @@ razorpay: {
     process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET,
   ),
 },
+
+  phonepe: {
+    merchantId: process.env.PHONEPE_MERCHANT_ID || 'PGTESTPAYUAT86',
+    saltKey: process.env.PHONEPE_SALT_KEY || '96434309-7796-489d-8924-ab56988a6076',
+    saltIndex: process.env.PHONEPE_SALT_INDEX || '1',
+    env: process.env.PHONEPE_ENV || 'SANDBOX',
+    callbackUrl: process.env.PHONEPE_CALLBACK_URL || '',
+    enabled: process.env.PHONEPE_ENABLED !== 'false',
+  },
 
 upi: {
   merchantVpa: process.env.UPI_MERCHANT_VPA || 'foodordering@okhdfcbank',

@@ -270,23 +270,25 @@ export class OrdersService {
             ? 0
             : this.calculateDeliveryFee(restaurant, distanceKm ?? 0);
 
+        const platformFeePercent =
+          restaurant.platformFeePercent != null
+            ? Number(restaurant.platformFeePercent)
+            : Number(this.configService.get<number>('pricing.platformFeePercent') ?? 5);
+
         let convenienceFee = 0;
         let taxAmount = 0;
 
         if (orderType === OrderType.DINE_IN) {
-          // Dine-In Self-Service SaaS model:
-          // Menu item prices are already GST inclusive.
-          // Platform Convenience Fee = 6% of subtotal.
-          // GST on Convenience Fee = 18% of the 6% fee.
-          const baseConvenienceFee = Number(((subtotal * 6) / 100).toFixed(2));
-          const gstOnConvenienceFee = Number(((baseConvenienceFee * 18) / 100).toFixed(2));
-          convenienceFee = baseConvenienceFee;
-          taxAmount = gstOnConvenienceFee;
+          // Table QR Ordering: 5% (or configured %) platform service fee on subtotal.
+          // Food menu item prices are tax-inclusive so 1000 + 5% = 1050 exactly!
+          convenienceFee = Number(((subtotal * platformFeePercent) / 100).toFixed(2));
+          taxAmount = 0;
         } else {
           taxAmount = this.calculateTax(
             restaurant,
             subtotal,
           );
+          convenienceFee = Number(((subtotal * platformFeePercent) / 100).toFixed(2));
         }
 
         const discountAmount =
@@ -303,6 +305,12 @@ export class OrdersService {
         const totalAmount = Number(
           (subtotal + deliveryFee + convenienceFee + taxAmount - discountAmount).toFixed(2),
         );
+
+        // Revenue Split calculation:
+        // Platform share = platform convenience fee (5% of subtotal)
+        // Restaurant share = remaining total (subtotal - discount + delivery if applicable)
+        const platformShare = convenienceFee;
+        const restaurantShare = Number((totalAmount - platformShare).toFixed(2));
 
         const newOrder = new Order();
 
@@ -331,6 +339,22 @@ export class OrdersService {
         newOrder.taxAmount = taxAmount;
         newOrder.discountAmount = discountAmount;
         newOrder.totalAmount = totalAmount;
+
+        newOrder.platformFeePercent = platformFeePercent;
+        newOrder.platformShare = platformShare;
+        newOrder.restaurantShare = restaurantShare;
+        newOrder.settlementStatus = 'PENDING';
+        newOrder.splitDetails = JSON.stringify({
+          platformFeePercent,
+          platformShare,
+          restaurantShare,
+          subtotal,
+          convenienceFee,
+          totalAmount,
+          currency: 'INR',
+          calculatedAt: new Date().toISOString(),
+          payoutStatus: 'PENDING',
+        });
 
         if (orderType === OrderType.DINE_IN && table) {
           newOrder.tableId = table.id;

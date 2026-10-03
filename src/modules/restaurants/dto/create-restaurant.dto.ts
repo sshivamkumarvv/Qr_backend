@@ -58,4 +58,10 @@ export class CreateRestaurantDto {
   @Min(0)
   @Max(100)
   dineInDiscountPercent?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  platformFeePercent?: number;
 }

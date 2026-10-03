@@ -175,6 +175,7 @@ export class TablesService {
     restaurantId: string;
     restaurantName: string;
     restaurantLogo: string | null;
+    platformFeePercent: number;
     isWithinRange: boolean | null;
     distanceMeters: number | null;
     qrToken: string;
@@ -204,6 +205,11 @@ export class TablesService {
       isWithinRange = true;
     }
 
+    const platformFeePercent =
+      table.branch.restaurant?.platformFeePercent != null
+        ? Number(table.branch.restaurant.platformFeePercent)
+        : Number(process.env.DEFAULT_PLATFORM_FEE_PERCENT ?? 5);
+
     return {
       tableId: table.id,
       tableNumber: table.tableNumber,
@@ -212,6 +218,7 @@ export class TablesService {
       restaurantId: table.branch.restaurantId,
       restaurantName: table.branch.restaurant?.name ?? 'Restaurant',
       restaurantLogo: table.branch.restaurant?.logoUrl ?? null,
+      platformFeePercent,
       isWithinRange,
       distanceMeters,
       qrToken: table.qrToken,

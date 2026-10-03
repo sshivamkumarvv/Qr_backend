@@ -97,6 +97,16 @@ logoUrl!: string | null;
   })
   dineInDiscountPercent!: number | null;
 
+  // Platform commission/fee percentage override for this restaurant.
+  // Defaults to global config (5%) when null.
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+  })
+  platformFeePercent!: number | null;
+
   @ManyToOne(() => User, (user) => user.restaurants, {
     nullable: false,
     onDelete: 'CASCADE',
